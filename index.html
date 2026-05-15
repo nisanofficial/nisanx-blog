@@ -17,7 +17,7 @@
     body {
       background: #000;
       color: #fff;
-      font-family: Arial, sans-serif;
+      font-family: 'Courier New', monospace;
       overflow-x: hidden;
     }
 
@@ -30,17 +30,38 @@
       z-index: -1;
     }
 
-    header, main,.modal-content {
+    header {
       position: relative;
       z-index: 1;
-      background: transparent;
-    }
-
-    header {
       padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #0ff3;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+    }
+
+   .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+   .logo img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid #0ff;
+      box-shadow: 0 0 15px #0ff;
+    }
+
+   .logo h2 {
+      font-size: 20px;
+    }
+
+   .logo h2 span {
+      color: #0ff;
     }
 
    .header-right {
@@ -50,35 +71,66 @@
     }
 
     input, #editor {
-      background: transparent;
-      border: 1px solid #7db8ff55;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid #0ff5;
       color: #fff;
       padding: 8px;
       border-radius: 6px;
+      font-family: 'Courier New', monospace;
     }
 
-    /* Button: border only, no background */
+    input:focus {
+      outline: none;
+      border-color: #0ff;
+      box-shadow: 0 0 10px #0ff;
+    }
+
+    /* Neon buttons - shudhu border */
     button {
       background: transparent;
-      border: 2px solid #7db8ff;
-      color: #fff;
+      border: 1px solid #0ff;
+      color: #0ff;
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: 6px;
       cursor: pointer;
+      font-family: 'Courier New', monospace;
       transition: 0.3s;
+      text-shadow: 0 0 10px #0ff;
     }
     button:hover {
-      border-color: #ff3b3b;
-      box-shadow: 0 0 15px #ff3b3b;
+      background: rgba(0,255,255,0.1);
+      box-shadow: 0 0 20px #0ff;
+      border-color: #0ff;
     }
 
-    /* Blink effect - shudhu text blink korbe */
-   .blink {
-      animation: blinkAnim 1.8s infinite alternate;
+    /* Posts */
+    #postsContainer {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
     }
-    @keyframes blinkAnim {
-      0% { opacity: 1; }
-      100% { opacity: 0.3; }
+
+   .post {
+      border: 1px solid #0ff5;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(5px);
+      animation: blink 3s infinite alternate;
+      transition: 0.3s;
+    }
+
+   .post:hover {
+      border-color: #0ff;
+      box-shadow: 0 0 15px #0ff3;
+    }
+
+   .post h3 {
+      color: #0ff;
+      margin-bottom: 10px;
     }
 
     /* Modal */
@@ -89,68 +141,57 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0,0,0,0.8);
       z-index: 10;
     }
 
    .modal-content {
+      border: 1px solid #0ff;
       padding: 20px;
-      border: 1px solid #7db8ff55;
-      border-radius: 12px;
+      border-radius: 10px;
       width: 90%;
       max-width: 600px;
+      background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 30px #0ff5;
     }
 
-    #postsContainer {
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-   .post {
-      border: 1px solid #7db8ff33;
-      padding: 15px;
-      border-radius: 10px;
-      background: transparent;
-    }
-
-    #loadMore {
-      display: block;
-      margin: 20px auto;
+    @keyframes blink {
+      0% { opacity: 1; }
+      100% { opacity: 0.8; }
     }
   </style>
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
 
-  <header class="blink">
-    <h2 class="blink">NisanX Blog</h2>
+  <header>
+    <div class="logo">
+      <img src="NisanX.jpg" alt="Logo">
+      <h2>NISAN<span>X</span> BLOG</h2>
+    </div>
     <div class="header-right">
-      <button id="themeToggle">🌙</button>
       <input type="text" id="searchBox" placeholder="Search posts...">
-      <button id="loginBtn">Login with Google</button>
-      <button id="uploadBtn" style="display:none;">Upload</button>
-      <button id="profileBtn" style="display:none;">Profile</button>
-      <button id="logoutBtn" style="display:none;">Logout</button>
+      <button id="loginBtn">LOGIN</button>
+      <button id="uploadBtn" style="display:none;">UPLOAD</button>
+      <button id="logoutBtn" style="display:none;">LOGOUT</button>
     </div>
   </header>
 
   <div id="uploadModal" class="modal" style="display:none;">
-    <div class="modal-content blink">
-      <h3 class="blink">Create Post</h3>
+    <div class="modal-content">
+      <h3 style="color:#0ff; margin-bottom:15px;">Create Post</h3>
       <input type="text" id="postTitle" placeholder="Title" style="width:100%; margin-bottom:10px;">
       <div id="editor" style="height:200px; margin-bottom:10px;"></div>
       <input type="file" id="imageUpload" accept="image/*" style="margin-bottom:10px;">
       <div style="display:flex; gap:10px;">
-        <button id="submitPost">Post</button>
-        <button onclick="closeModal()">Cancel</button>
+        <button id="submitPost">POST</button>
+        <button onclick="closeModal()">CANCEL</button>
       </div>
     </div>
   </div>
 
   <main id="postsContainer"></main>
-  <button id="loadMore" style="display:none;">Load More</button>
 
   <!-- Three.js -->
   <script type="importmap">
@@ -173,99 +214,35 @@
     });
 
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
     camera.position.z = 5;
 
-    // Rotating + color changing stars
-    const starCount = 800;
-    const starGeometry = new THREE.PlaneGeometry(0.15, 0.15);
-    const starMaterial = new THREE.MeshBasicMaterial({
-      color: 0x7db8ff,
-      transparent: true,
-      opacity: 0.9,
-      side: THREE.DoubleSide
-    });
-
-    const instancedStars = new THREE.InstancedMesh(starGeometry, starMaterial, starCount);
-    scene.add(instancedStars);
-
-    const dummy = new THREE.Object3D();
-    const rotationSpeeds = [];
-    const colorOffsets = [];
+    // Star field
+    const starCount = 1200;
+    const positions = new Float32Array(starCount * 3);
 
     for(let i = 0; i < starCount; i++) {
-      dummy.position.set(
-        (Math.random() - 0.5) * 25,
-        (Math.random() - 0.5) * 25,
-        (Math.random() - 0.5) * 25
-      );
-      dummy.rotation.z = Math.random() * Math.PI * 2;
-      dummy.updateMatrix();
-      instancedStars.setMatrixAt(i, dummy.matrix);
-      rotationSpeeds.push(Math.random() * 0.05 + 0.01);
-      colorOffsets.push(Math.random() * 360);
+      positions[i * 3] = (Math.random() - 0.5) * 25;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 25;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 25;
     }
-    instancedStars.instanceMatrix.needsUpdate = true;
 
-    // Laser light
-    const laserMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff3b3b,
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+      color: 0x00ff00,
+      size: 0.05,
       transparent: true,
-      opacity: 0,
-      blending: THREE.AdditiveBlending
+      opacity: 0.8
     });
-    const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 20, 8);
-    const laser = new THREE.Mesh(laserGeometry, laserMaterial);
-    laser.rotation.z = Math.PI / 2;
-    laser.position.x = 12;
-    scene.add(laser);
 
-    let laserActive = false;
-    let time = 0;
-
-    function fireLaser() {
-      laserActive = true;
-      laser.position.x = 12;
-      laser.position.y = (Math.random() - 0.5) * 5;
-      laserMaterial.opacity = 0.8;
-
-      setTimeout(() => {
-        laserActive = false;
-        laserMaterial.opacity = 0;
-      }, 1000);
-    }
-
-    document.addEventListener('pointerdown', fireLaser);
+    const stars = new THREE.Points(geometry, material);
+    scene.add(stars);
 
     function animate() {
       requestAnimationFrame(animate);
-      time += 0.01;
-
-      instancedStars.rotation.y += 0.0008;
-      instancedStars.rotation.x += 0.0003;
-
-      const color = new THREE.Color();
-      for(let i = 0; i < starCount; i++) {
-        dummy.matrix.fromArray(instancedStars.instanceMatrix.array, i * 16);
-        dummy.rotation.z += rotationSpeeds[i];
-        dummy.updateMatrix();
-        instancedStars.setMatrixAt(i, dummy.matrix);
-
-        const hue = (time * 20 + colorOffsets[i]) % 360;
-        color.setHSL(hue / 360, 0.8, 0.6);
-        instancedStars.setColorAt(i, color);
-      }
-      instancedStars.instanceMatrix.needsUpdate = true;
-      instancedStars.instanceColor.needsUpdate = true;
-
-      if(laserActive) {
-        laser.position.x -= 0.4;
-        if(laser.position.x < -12) {
-          laserActive = false;
-          laserMaterial.opacity = 0;
-        }
-      }
-
+      stars.rotation.y += 0.0005;
+      stars.rotation.x += 0.0002;
       renderer.render(scene, camera);
     }
     animate();
