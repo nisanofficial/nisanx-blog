@@ -8,12 +8,14 @@ import { getStorage, ref, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyC6DeWkKOiynidZDftDc_aMuLuNdIB4cNQ",
   authDomain: "nisanx-otp.firebaseapp.com",
+  databaseURL: "https://nisanx-otp-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "nisanx-otp",
-  storageBucket: "nisanx-otp.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "nisanx-otp.firebasestorage.app",
+  messagingSenderId: "315362812085",
+  appId: "1:315362812085:web:08838a776d65a056e85efc",
+  measurementId: "G-4HW6F2C2XV"
 };
 
 const app = initializeApp(firebaseConfig);
