@@ -52,33 +52,38 @@ onAuthStateChanged(auth, user => {
 });
 
 // Upload Post with Image
-document.getElementById('uploadBtn').onclick = () => document.getElementById('uploadModal').style.display = 'flex';
-window.closeModal = () => document.getElementById('uploadModal').style.display = 'none';
-
 document.getElementById('submitPost').onclick = async () => {
   const title = document.getElementById('postTitle').value;
   const content = quill.root.innerHTML;
   const file = document.getElementById('imageUpload').files[0];
-  
-  let imageUrl = '';
-  if(file) {
-    const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    imageUrl = await getDownloadURL(storageRef);
-  }
 
-  await addDoc(collection(db, 'posts'), {
-    title,
-    content,
-    imageUrl,
-    uid: currentUser.uid,
-    author: currentUser.displayName,
-    createdAt: Date.now(),
-    likes: 0
-  });
-  
-  closeModal();
-  loadPosts();
+  let imageUrl = '';
+
+  try {
+    if(file) {
+      const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      imageUrl = await getDownloadURL(storageRef);
+    }
+
+    await addDoc(collection(db, 'posts'), {
+      title,
+      content,
+      imageUrl,
+      uid: currentUser.uid,
+      author: currentUser.displayName,
+      createdAt: Date.now(),
+      likes: 0
+    });
+
+    closeModal();
+    loadPosts();
+    alert('Post done!');
+
+  } catch(err) {
+    console.error(err);
+    alert('Error: ' + err.message);
+  }
 };
 
 // Load Posts with Pagination & Search
@@ -111,3 +116,22 @@ document.getElementById('profileBtn').onclick = () => {
 
 // Search on type
 document.getElementById('searchBox').oninput = loadPosts;
+
+//ki bal koice Meta AI niche add kortam
+function renderPost(id, data) {
+  const postsContainer = document.getElementById('postsContainer');
+
+  const postDiv = document.createElement('div');
+  postDiv.className = 'post';
+
+  postDiv.innerHTML = `
+    <h3>${data.title}</h3>
+    <div>${data.content}</div>
+    ${data.imageUrl? `<img src="${data.imageUrl}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : ''}
+    <p style="font-size:12px; opacity:0.7;">Posted by ${data.author}</p>
+    ${currentUser && currentUser.uid === data.uid?
+      `<button onclick="deletePost('${id}', '${data.uid}')">Delete</button>` : ''}
+  `;
+
+  postsContainer.appendChild(postDiv);
+}
