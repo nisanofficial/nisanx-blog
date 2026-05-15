@@ -4,12 +4,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NisanX Blog</title>
-  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-  
+
   <style>
-    /* 3D background canvas full screen e rakhar jonno */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
     #bg-canvas {
       position: fixed;
       top: 0;
@@ -18,24 +29,103 @@
       height: 100%;
       z-index: -1;
     }
-    
-    /* content upore thakuk */
-    header, main, #loadMore {
+
+    header, main,.modal-content {
       position: relative;
       z-index: 1;
+      background: transparent;
     }
 
+    header {
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+   .header-right {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    input, #editor {
+      background: transparent;
+      border: 1px solid #7db8ff55;
+      color: #fff;
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    /* Button: border only, no background */
+    button {
+      background: transparent;
+      border: 2px solid #7db8ff;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      border-color: #ff3b3b;
+      box-shadow: 0 0 15px #ff3b3b;
+    }
+
+    /* Blink effect - shudhu text blink korbe */
+   .blink {
+      animation: blinkAnim 1.8s infinite alternate;
+    }
+    @keyframes blinkAnim {
+      0% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+
+    /* Modal */
    .modal {
-      position: relative;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
       z-index: 10;
+    }
+
+   .modal-content {
+      padding: 20px;
+      border: 1px solid #7db8ff55;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+    }
+
+    #postsContainer {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+   .post {
+      border: 1px solid #7db8ff33;
+      padding: 15px;
+      border-radius: 10px;
+      background: transparent;
+    }
+
+    #loadMore {
+      display: block;
+      margin: 20px auto;
     }
   </style>
 </head>
 <body>
   <canvas id="bg-canvas"></canvas>
 
-  <header>
-    <h2>NisanX Blog</h2>
+  <header class="blink">
+    <h2 class="blink">NisanX Blog</h2>
     <div class="header-right">
       <button id="themeToggle">🌙</button>
       <input type="text" id="searchBox" placeholder="Search posts...">
@@ -47,20 +137,22 @@
   </header>
 
   <div id="uploadModal" class="modal" style="display:none;">
-    <div class="modal-content">
-      <h3>Create Post</h3>
-      <input type="text" id="postTitle" placeholder="Title">
-      <div id="editor" style="height:200px;"></div>
-      <input type="file" id="imageUpload" accept="image/*">
-      <button id="submitPost">Post</button>
-      <button onclick="closeModal()">Cancel</button>
+    <div class="modal-content blink">
+      <h3 class="blink">Create Post</h3>
+      <input type="text" id="postTitle" placeholder="Title" style="width:100%; margin-bottom:10px;">
+      <div id="editor" style="height:200px; margin-bottom:10px;"></div>
+      <input type="file" id="imageUpload" accept="image/*" style="margin-bottom:10px;">
+      <div style="display:flex; gap:10px;">
+        <button id="submitPost">Post</button>
+        <button onclick="closeModal()">Cancel</button>
+      </div>
     </div>
   </div>
 
   <main id="postsContainer"></main>
   <button id="loadMore" style="display:none;">Load More</button>
 
-  <!-- Three.js import -->
+  <!-- Three.js -->
   <script type="importmap">
     {
       "imports": {
@@ -84,47 +176,100 @@
     renderer.setPixelRatio(window.devicePixelRatio);
     camera.position.z = 5;
 
-    // Floating particles banano
-    const particleCount = 1500;
-    const particlesGeometry = new THREE.BufferGeometry();
-    const posArray = new Float32Array(particleCount * 3);
+    // Rotating + color changing stars
+    const starCount = 800;
+    const starGeometry = new THREE.PlaneGeometry(0.15, 0.15);
+    const starMaterial = new THREE.MeshBasicMaterial({
+      color: 0x7db8ff,
+      transparent: true,
+      opacity: 0.9,
+      side: THREE.DoubleSide
+    });
 
-    for(let i = 0; i < particleCount * 3; i++) {
-      posArray[i] = (Math.random() - 0.5) * 20;
+    const instancedStars = new THREE.InstancedMesh(starGeometry, starMaterial, starCount);
+    scene.add(instancedStars);
+
+    const dummy = new THREE.Object3D();
+    const rotationSpeeds = [];
+    const colorOffsets = [];
+
+    for(let i = 0; i < starCount; i++) {
+      dummy.position.set(
+        (Math.random() - 0.5) * 25,
+        (Math.random() - 0.5) * 25,
+        (Math.random() - 0.5) * 25
+      );
+      dummy.rotation.z = Math.random() * Math.PI * 2;
+      dummy.updateMatrix();
+      instancedStars.setMatrixAt(i, dummy.matrix);
+      rotationSpeeds.push(Math.random() * 0.05 + 0.01);
+      colorOffsets.push(Math.random() * 360);
+    }
+    instancedStars.instanceMatrix.needsUpdate = true;
+
+    // Laser light
+    const laserMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff3b3b,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.AdditiveBlending
+    });
+    const laserGeometry = new THREE.CylinderGeometry(0.02, 0.02, 20, 8);
+    const laser = new THREE.Mesh(laserGeometry, laserMaterial);
+    laser.rotation.z = Math.PI / 2;
+    laser.position.x = 12;
+    scene.add(laser);
+
+    let laserActive = false;
+    let time = 0;
+
+    function fireLaser() {
+      laserActive = true;
+      laser.position.x = 12;
+      laser.position.y = (Math.random() - 0.5) * 5;
+      laserMaterial.opacity = 0.8;
+
+      setTimeout(() => {
+        laserActive = false;
+        laserMaterial.opacity = 0;
+      }, 1000);
     }
 
-    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    
-    const particlesMaterial = new THREE.PointsMaterial({
-      size: 0.02,
-      color: 0x4da6ff,
-      transparent: true,
-      opacity: 0.8
-    });
+    document.addEventListener('pointerdown', fireLaser);
 
-    const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
-    scene.add(particleSystem);
-
-    // Mouse move effect
-    let mouseX = 0, mouseY = 0;
-    document.addEventListener('mousemove', (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-    });
-
-    // Animate loop
     function animate() {
       requestAnimationFrame(animate);
-      particleSystem.rotation.y += 0.0005;
-      particleSystem.rotation.x += 0.0005;
-      camera.position.x += (mouseX * 2 - camera.position.x) * 0.02;
-      camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
-      camera.lookAt(scene.position);
+      time += 0.01;
+
+      instancedStars.rotation.y += 0.0008;
+      instancedStars.rotation.x += 0.0003;
+
+      const color = new THREE.Color();
+      for(let i = 0; i < starCount; i++) {
+        dummy.matrix.fromArray(instancedStars.instanceMatrix.array, i * 16);
+        dummy.rotation.z += rotationSpeeds[i];
+        dummy.updateMatrix();
+        instancedStars.setMatrixAt(i, dummy.matrix);
+
+        const hue = (time * 20 + colorOffsets[i]) % 360;
+        color.setHSL(hue / 360, 0.8, 0.6);
+        instancedStars.setColorAt(i, color);
+      }
+      instancedStars.instanceMatrix.needsUpdate = true;
+      instancedStars.instanceColor.needsUpdate = true;
+
+      if(laserActive) {
+        laser.position.x -= 0.4;
+        if(laser.position.x < -12) {
+          laserActive = false;
+          laserMaterial.opacity = 0;
+        }
+      }
+
       renderer.render(scene, camera);
     }
     animate();
 
-    // Resize handle
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
