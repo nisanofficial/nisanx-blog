@@ -1,10 +1,10 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } 
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, startAfter, 
-  doc, updateDoc, deleteDoc, where } 
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, startAfter,
+  doc, updateDoc, deleteDoc, where }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } 
+import { getStorage, ref, uploadBytes, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -51,6 +51,17 @@ onAuthStateChanged(auth, user => {
   loadPosts();
 });
 
+// Modal open/close
+document.getElementById('uploadBtn').onclick = () => {
+  document.getElementById('uploadModal').style.display = 'flex';
+};
+window.closeModal = () => {
+  document.getElementById('uploadModal').style.display = 'none';
+  document.getElementById('postTitle').value = '';
+  quill.root.innerHTML = '';
+  document.getElementById('imageUpload').value = '';
+};
+
 // Upload Post with Image
 document.getElementById('submitPost').onclick = async () => {
   const title = document.getElementById('postTitle').value;
@@ -90,15 +101,25 @@ document.getElementById('submitPost').onclick = async () => {
 async function loadPosts() {
   const search = document.getElementById('searchBox').value;
   let q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(10));
-  
+
   const snap = await getDocs(q);
   lastDoc = snap.docs[snap.docs.length-1];
-  
+
   document.getElementById('postsContainer').innerHTML = '';
   snap.forEach(doc => renderPost(doc.id, doc.data()));
-  
+
   document.getElementById('loadMore').style.display = snap.size === 10? 'block' : 'none';
 }
+
+// Load More
+document.getElementById('loadMore').onclick = async () => {
+  if(!lastDoc) return;
+  let q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), startAfter(lastDoc), limit(10));
+  const snap = await getDocs(q);
+  lastDoc = snap.docs[snap.docs.length-1];
+  snap.forEach(doc => renderPost(doc.id, doc.data()));
+  document.getElementById('loadMore').style.display = snap.size === 10? 'block' : 'none';
+};
 
 // Edit/Delete
 window.deletePost = async (id, uid) => {
@@ -117,18 +138,20 @@ document.getElementById('profileBtn').onclick = () => {
 // Search on type
 document.getElementById('searchBox').oninput = loadPosts;
 
-//ki bal koice Meta AI niche add kortam
+// Render post with blink effect
 function renderPost(id, data) {
   const postsContainer = document.getElementById('postsContainer');
 
   const postDiv = document.createElement('div');
-  postDiv.className = 'post';
+  postDiv.className = 'post blink'; // blink add korlam
+  postDiv.style.background = 'transparent'; // background transparent
+  postDiv.style.border = '1px solid #7db8ff33'; // border only
 
   postDiv.innerHTML = `
-    <h3>${data.title}</h3>
-    <div>${data.content}</div>
+    <h3 class="blink">${data.title}</h3>
+    <div class="blink">${data.content}</div>
     ${data.imageUrl? `<img src="${data.imageUrl}" style="max-width:100%; border-radius:8px; margin-top:10px;">` : ''}
-    <p style="font-size:12px; opacity:0.7;">Posted by ${data.author}</p>
+    <p style="font-size:12px; opacity:0.7;" class="blink">Posted by ${data.author}</p>
     ${currentUser && currentUser.uid === data.uid?
       `<button onclick="deletePost('${id}', '${data.uid}')">Delete</button>` : ''}
   `;
