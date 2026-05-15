@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NisanX Blog</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  font-family: 'Inter', sans-serif; 
+  background: #0f172a; 
+  color: #fff; 
+}
+header {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  padding: 16px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.logo { font-size: 24px; font-weight: 700; color: #3b82f6; }
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #3b82f6;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+.container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+.post-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: 0.3s;
+}
+.post-card:hover { transform: translateY(-5px); }
+.post-card img, .post-card video {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+.post-content { padding: 16px; }
+.post-content h3 { margin-bottom: 8px; }
+.post-actions {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+.post-actions button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.post-actions button.liked { color: #ef4444; }
+.modal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal.active { display: flex; }
+.modal-content {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+}
+.modal-content input, .modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+}
+.comments {
+  margin-top: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.comment {
+  background: rgba(255,255,255,0.05);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NisanX Blog</div>
+  <div>
+    <button class="btn" id="loginBtn" onclick="login()">Login with Google</button>
+    <button class="btn" id="adminBtn" onclick="openAdmin()" style="display:none;">Admin Panel</button>
+    <button class="btn" onclick="logout()" id="logoutBtn" style="display:none;">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="post-grid" id="posts"></div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal" id="adminModal">
+  <div class="modal-content">
+    <h2>Upload Post</h2>
+    <input type="text" id="title" placeholder="Title">
+    <textarea id="desc" placeholder="Description" rows="4"></textarea>
+    <input type="file" id="file" accept="image/*,video/*">
+    <button class="btn" onclick="uploadPost()">Upload</button>
+    <button class="btn" onclick="closeAdmin()" style="background:#ef4444;">Close</button>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+// Replace with your Firebase config
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "XXX",
+  appId: "XXX"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = null;
+
+// Auth
+window.login = async () => {
+  const provider = new GoogleAuthProvider();
+  await signInWithPopup(auth, provider);
+}
+
+window.logout = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  document.getElementById('loginBtn').style.display = user ? 'none' : 'inline-block';
+  document.getElementById('logoutBtn').style.display = user ? 'inline-block' : 'none';
+  document.getElementById('adminBtn').style.display = user ? 'inline-block' : 'none';
+});
+
+// Load Posts
+const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+onSnapshot(q, snapshot => {
+  const postsDiv = document.getElementById('posts');
+  postsDiv.innerHTML = '';
+  snapshot.forEach(doc => {
+    const post = doc.data();
+    const postId = doc.id;
+    const isLiked = post.likes?.includes(currentUser?.uid);
+    
+    postsDiv.innerHTML += `
+      <div class="post-card">
+        ${post.type === 'video' 
+          ? `<video src="${post.url}" controls></video>`
+          : `<img src="${post.url}">`
+        }
+        <div class="post-content">
+          <h3>${post.title}</h3>
+          <p>${post.desc}</p>
+        </div>
+        <div class="post-actions">
+          <button class="${isLiked ? 'liked' : ''}" onclick="toggleLike('${postId}')">
+            ❤️ ${post.likes?.length || 0}
+          </button>
+          <button onclick="showComments('${postId}')">💬 ${post.comments?.length || 0}</button>
+          <button onclick="sharePost('${postId}')">🔗 Share</button>
+        </div>
+        <div class="comments" id="comments-${postId}" style="display:none;">
+          ${(post.comments || []).map(c => `<div class="comment"><b>${c.user}:</b> ${c.text}</div>`).join('')}
+          <input type="text" id="comment-${postId}" placeholder="Add comment">
+          <button class="btn" onclick="addComment('${postId}')">Post</button>
+        </div>
+      </div>
+    `;
+  });
+});
+
+// Upload Post
+window.uploadPost = async () => {
+  const title = document.getElementById('title').value;
+  const desc = document.getElementById('desc').value;
+  const file = document.getElementById('file').files[0];
+  
+  if (!file) return alert('Select a file');
+  
+  const storageRef = ref(storage, `posts/${Date.now()}_${file.name}`);
+  await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(storageRef);
+  
+  await addDoc(collection(db, "posts"), {
+    title,
+    desc,
+    url,
+    type: file.type.startsWith('video') ? 'video' : 'image',
+    likes: [],
+    comments: [],
+    createdAt: Date.now(),
+    author: currentUser.uid
+  });
+  
+  closeAdmin();
+  alert('Uploaded!');
+}
+
+// Like/Unlike
+window.toggleLike = async (postId) => {
+  if (!currentUser) return alert('Login first');
+  const postRef = doc(db, "posts", postId);
+  const post = await getDocs(query(collection(db, "posts")));
+  
+  await updateDoc(postRef, {
+    likes: currentUser.uid 
+      ? (post.data().likes.includes(currentUser.uid) 
+        ? arrayRemove(currentUser.uid) 
+        : arrayUnion(currentUser.uid))
+      : arrayUnion(currentUser.uid)
+  });
+}
+
+// Comments
+window.showComments = (postId) => {
+  const div = document.getElementById(`comments-${postId}`);
+  div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+window.addComment = async (postId) => {
+  if (!currentUser) return alert('Login first');
+  const text = document.getElementById(`comment-${postId}`).value;
+  if (!text) return;
+  
+  const postRef = doc(db, "posts", postId);
+  await updateDoc(postRef, {
+    comments: arrayUnion({ user: currentUser.displayName, text })
+  });
+  document.getElementById(`comment-${postId}`).value = '';
+}
+
+// Share
+window.sharePost = (postId) => {
+  const url = window.location.href + '?post=' + postId;
+  navigator.clipboard.writeText(url);
+  alert('Link copied!');
+}
+
+// Admin Modal
+window.openAdmin = () => document.getElementById('adminModal').classList.add('active');
+window.closeAdmin = () => document.getElementById('adminModal').classList.remove('active');
+</script>
+</body>
+</html>
